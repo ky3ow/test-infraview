@@ -1,0 +1,14 @@
+name: PR - App
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+
+jobs:
+  terraform:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      dir: app
+      apply: false
+    secrets:
+      role-to-assume: ${{ secrets.AWS_ROLE_ARN }}

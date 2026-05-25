@@ -1,0 +1,15 @@
+name: Main - Infra
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+
+jobs:
+  terraform:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      dir: infra
+      apply: true
+    secrets:
+      role-to-assume: ${{ secrets.AWS_ROLE_ARN }}

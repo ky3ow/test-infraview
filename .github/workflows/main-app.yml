@@ -1,0 +1,15 @@
+name: Main - App
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+
+jobs:
+  terraform:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      dir: app
+      apply: true
+    secrets:
+      role-to-assume: ${{ secrets.AWS_ROLE_ARN }}

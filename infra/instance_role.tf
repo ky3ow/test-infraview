@@ -41,7 +41,6 @@ resource "aws_iam_role_policy" "infraview_secrets" {
       ]
       Resource = "arn:aws:logs:*:*:*"
     }]
-    }]
   })
 }
 

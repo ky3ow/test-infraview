@@ -96,7 +96,7 @@ runs:
       run: |
         GRAPH_URL="${INPUT_BASE_URL}/graph/${INPUT_NAMESPACE}/${REVISION_HASH}"
 
-        BODY=$(printf '### Infraview Graph\n\n|---|---|\n| **Namespace** | `%s` |\n| **Branch** | `%s` |\n| **Revision** | `%s` |\n| **Graph** | [View Graph](%s) |' "$INPUT_NAMESPACE" "$REVISION_NAME" "$REVISION_HASH" "$GRAPH_URL")
+        BODY=$(printf '### Infraview Graph\n\n| | |\n|---|---|\n| **Namespace** | `%s` |\n| **Branch** | `%s` |\n| **Revision** | `%s` |\n| **Graph** | [View Graph](%s) |' "$INPUT_NAMESPACE" "$REVISION_NAME" "$REVISION_HASH" "$GRAPH_URL")
 
         if gh pr comment "$PR_NUMBER" --body "$BODY"; then
           echo "Posted graph link to PR #${PR_NUMBER}"

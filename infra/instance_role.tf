@@ -27,6 +27,11 @@ resource "aws_iam_role_policy" "infraview_secrets" {
         "secretsmanager:ListSecretVersionIds"
       ]
       Resource = aws_secretsmanager_secret.infraview_store.arn
+    }, {
+      Effect   = "Allow"
+      Action   = "s3:GetObject"
+      Resource = "arn:aws:s3:::ky3ow-infraview-tfstate/artifacts/*"
+    }]
     }]
   })
 }

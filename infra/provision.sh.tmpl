@@ -2,27 +2,104 @@
 set -e
 
 SECRET_NAME="${secret_name}"
-REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+REGION=$(curl -sf http://169.254.169.254/latest/meta-data/placement/region || echo "us-east-1")
+INSTANCE_ID=$(curl -sf http://169.254.169.254/latest/meta-data/instance-id)
+PUBLIC_DNS=$(curl -sf http://169.254.169.254/latest/meta-data/public-hostname)
+PUBLIC_IP=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4)
+
+DB_PATH="/var/lib/infraview/infraview.db"
 
 # Install prerequisites
 apt-get update
-apt-get install -y awscli ec2-instance-connect
+apt-get install -y jq awscli ec2-instance-connect
 
-# --- InfraView init ---
+# Download InfraView binary from S3
+aws s3 cp s3://ky3ow-infraview-tfstate/artifacts/infraview-standalone-linux-amd64 \
+  /usr/local/bin/infraview
+chmod +x /usr/local/bin/infraview
 
-# Store server metadata into the secret store
+# Create data directory
+mkdir -p "$(dirname "$DB_PATH")"
+export INFRAVIEW_DB_PATH="$DB_PATH"
+
+# Generate tokens
+READ_TOKEN=$(/usr/local/bin/infraview token generate -type read)
+WRITE_TOKEN=$(/usr/local/bin/infraview token generate -type write)
+
+# Store everything in Secrets Manager
 aws secretsmanager put-secret-value \
   --secret-id "$SECRET_NAME" \
   --region "$REGION" \
   --secret-string "$(jq -n \
+    --arg url "http://$PUBLIC_DNS" \
+    --arg ip "$PUBLIC_IP" \
+    --arg id "$INSTANCE_ID" \
     --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg id "$(curl -s http://169.254.169.254/latest/meta-data/instance-id)" \
-    --arg region "$REGION" \
-    '{ provisioned_at: $ts, instance_id: $id, region: $region }')"
+    --arg rt "$READ_TOKEN" \
+    --arg wt "$WRITE_TOKEN" \
+    '{ url: $url, ip: $ip, instance_id: $id, last_seen: $ts, read_token: $rt, write_token: $wt }')"
 
-# Placeholder: download & start infraview server
-# curl -sL https://example.com/infraview -o /usr/local/bin/infraview
-# chmod +x /usr/local/bin/infraview
-# /usr/local/bin/infraview --port 8080 &
+# systemd service
+cat > /etc/systemd/system/infraview.service << 'EOF'
+[Unit]
+Description=InfraView Server
+After=network-online.target
+Wants=network-online.target
 
-echo "InfraView provisioning complete"
+[Service]
+Type=simple
+Environment=INFRAVIEW_DB_PATH=/var/lib/infraview/infraview.db
+Environment=INFRAVIEW_ADDRESS=0.0.0.0:80
+Environment=LOG_LEVEL=info
+ExecStart=/usr/local/bin/infraview
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable --now infraview.service
+
+# Boot-time updater (IP/DNS may change after stop/start)
+cat > /usr/local/bin/update-infraview-host.sh << 'UPDATEOF'
+#!/bin/bash
+SECRET_NAME="${secret_name}"
+REGION=$(curl -sf http://169.254.169.254/latest/meta-data/placement/region || echo "us-east-1")
+INSTANCE_ID=$(curl -sf http://169.254.169.254/latest/meta-data/instance-id)
+PUBLIC_DNS=$(curl -sf http://169.254.169.254/latest/meta-data/public-hostname)
+PUBLIC_IP=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4)
+
+CURRENT=$(aws secretsmanager get-secret-value \
+  --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
+
+NEW=$(echo "$CURRENT" | jq \
+  --arg url "http://$PUBLIC_DNS" \
+  --arg ip "$PUBLIC_IP" \
+  --arg id "$INSTANCE_ID" \
+  --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  '. + { url: $url, ip: $ip, instance_id: $id, last_seen: $ts }')
+
+aws secretsmanager put-secret-value \
+  --secret-id "$SECRET_NAME" --region "$REGION" --secret-string "$NEW"
+UPDATEOF
+chmod +x /usr/local/bin/update-infraview-host.sh
+
+# Register systemd boot service
+cat > /etc/systemd/system/infraview-host-update.service << 'EOF'
+[Unit]
+Description=Update InfraView host info in Secrets Manager
+After=network-online.target infraview.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/update-infraview-host.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable infraview-host-update.service
+
+echo "InfraView provisioned: $PUBLIC_DNS"

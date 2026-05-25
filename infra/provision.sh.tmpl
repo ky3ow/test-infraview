@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+SECRET_NAME="${secret_name}"
+REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+
+# Install prerequisites
+apt-get update
+apt-get install -y awscli ec2-instance-connect
+
+# --- InfraView init ---
+
+# Store server metadata into the secret store
+aws secretsmanager put-secret-value \
+  --secret-id "$SECRET_NAME" \
+  --region "$REGION" \
+  --secret-string "$(jq -n \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg id "$(curl -s http://169.254.169.254/latest/meta-data/instance-id)" \
+    --arg region "$REGION" \
+    '{ provisioned_at: $ts, instance_id: $id, region: $region }')"
+
+# Placeholder: download & start infraview server
+# curl -sL https://example.com/infraview -o /usr/local/bin/infraview
+# chmod +x /usr/local/bin/infraview
+# /usr/local/bin/infraview --port 8080 &
+
+echo "InfraView provisioning complete"

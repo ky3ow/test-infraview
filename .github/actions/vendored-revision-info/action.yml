@@ -96,6 +96,7 @@ runs:
       run: |
         GRAPH_URL="${INPUT_BASE_URL}/graph/${INPUT_NAMESPACE}/${REVISION_HASH}"
 
+        echo "::info::$REVISION_HASH"
         BODY=$(printf '### Infraview Graph\n\n| | |\n|---|---|\n| **Namespace** | `%s` |\n| **Branch** | `%s` |\n| **Revision** | `%s` |\n| **Graph** | [View Graph](%s) |' "$INPUT_NAMESPACE" "$REVISION_NAME" "$REVISION_HASH" "$GRAPH_URL")
 
         # Find existing InfraView comment and update it

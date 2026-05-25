@@ -38,7 +38,7 @@ runs:
         INPUT_NAMESPACE: ${{ inputs.namespace }}
         INPUT_PLAN_FILE: ${{ inputs.plan_file }}
       run: |
-        REVISION_HASH="$GITHUB_SHA:0:8"
+        REVISION_HASH="${GITHUB_SHA:0:8}"
         REVISION_NAME="$GITHUB_HEAD_REF"
         REVISION_NAME="${REVISION_NAME//\//-}"
         if [ -z "$REVISION_NAME" ]; then

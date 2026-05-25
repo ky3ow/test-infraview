@@ -77,7 +77,7 @@ jobs:
           base_url: ${{ env.INFRAVIEW_URL }}
           token: ${{ env.INFRAVIEW_WRITE_TOKEN }}
           namespace: ${{ inputs.dir }}
-          plan_file: plan.json
+          plan_file: ${{ inputs.dir }}/plan.json
 
       - name: Terraform Apply
         if: inputs.apply && !inputs.destroy

@@ -1,0 +1,20 @@
+name: Destroy All
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy-infra:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      dir: infra
+      destroy: true
+    secrets:
+      role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+  destroy-app:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      dir: app
+      destroy: true
+    secrets:
+      role-to-assume: ${{ secrets.AWS_ROLE_ARN }}

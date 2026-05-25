@@ -9,6 +9,10 @@ on:
         required: false
         type: boolean
         default: false
+      destroy:
+        required: false
+        type: boolean
+        default: false
     secrets:
       role-to-assume:
         required: true
@@ -44,5 +48,9 @@ jobs:
         run: terraform plan -no-color
 
       - name: Terraform Apply
-        if: inputs.apply
+        if: inputs.apply && !inputs.destroy
         run: terraform apply -auto-approve
+
+      - name: Terraform Destroy
+        if: inputs.destroy
+        run: terraform destroy -auto-approve

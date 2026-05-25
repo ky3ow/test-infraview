@@ -2,6 +2,9 @@ name: Destroy All
 on:
   workflow_dispatch:
 
+permissions:
+  id-token: write
+
 jobs:
   destroy-infra:
     uses: ./.github/workflows/terraform.yml

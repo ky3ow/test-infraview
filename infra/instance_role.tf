@@ -44,6 +44,11 @@ resource "aws_iam_role_policy" "infraview_secrets" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "ssm_managed_instance_core" {
+  role       = aws_iam_role.infraview_instance.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "infraview" {
   name = "infraview-demo"
   role = aws_iam_role.infraview_instance.name

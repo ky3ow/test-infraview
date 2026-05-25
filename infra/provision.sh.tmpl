@@ -11,7 +11,7 @@ DB_PATH="/var/lib/infraview/infraview.db"
 
 # Install prerequisites
 apt-get update
-apt-get install -y jq awscli ec2-instance-connect wget
+apt-get install -y jq awscli wget
 
 # Download InfraView binary from S3
 aws s3 cp s3://ky3ow-infraview-tfstate/artifacts/infraview-standalone-linux-amd64 \

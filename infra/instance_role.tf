@@ -31,6 +31,15 @@ resource "aws_iam_role_policy" "infraview_secrets" {
       Effect   = "Allow"
       Action   = "s3:GetObject"
       Resource = "arn:aws:s3:::ky3ow-infraview-tfstate/artifacts/*"
+    }, {
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "arn:aws:logs:*:*:*"
     }]
     }]
   })

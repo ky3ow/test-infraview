@@ -11,7 +11,7 @@ DB_PATH="/var/lib/infraview/infraview.db"
 
 # Install prerequisites
 apt-get update
-apt-get install -y jq awscli ec2-instance-connect
+apt-get install -y jq awscli ec2-instance-connect wget
 
 # Download InfraView binary from S3
 aws s3 cp s3://ky3ow-infraview-tfstate/artifacts/infraview-standalone-linux-amd64 \
@@ -39,11 +39,40 @@ aws secretsmanager put-secret-value \
     --arg wt "$WRITE_TOKEN" \
     '{ url: $url, ip: $ip, instance_id: $id, last_seen: $ts, read_token: $rt, write_token: $wt }')"
 
+# CloudWatch Agent install
+wget -q "https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb"
+DEBIAN_FRONTEND=noninteractive dpkg -i amazon-cloudwatch-agent.deb
+
+# CW Agent config: tail infraview logs to CloudWatch
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << CWEOF
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/infraview.log",
+            "log_group_name": "/aws/ec2/infraview-demo",
+            "log_stream_name": "{instance_id}"
+          }
+        ]
+      }
+    },
+    "log_stream_name": "{instance_id}"
+  }
+}
+CWEOF
+
+# Start & Enable CW agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+systemctl enable amazon-cloudwatch-agent
+
 # systemd service
 cat > /etc/systemd/system/infraview.service << 'EOF'
 [Unit]
 Description=InfraView Server
-After=network-online.target
+After=network-online.target amazon-cloudwatch-agent.service
 Wants=network-online.target
 
 [Service]
@@ -51,6 +80,8 @@ Type=simple
 Environment=INFRAVIEW_DB_PATH=/var/lib/infraview/infraview.db
 Environment=INFRAVIEW_ADDRESS=0.0.0.0:80
 Environment=LOG_LEVEL=info
+StandardOutput=append:/var/log/infraview.log
+StandardError=append:/var/log/infraview.log
 ExecStart=/usr/local/bin/infraview
 Restart=on-failure
 RestartSec=5

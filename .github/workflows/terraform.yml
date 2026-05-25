@@ -35,7 +35,8 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        run: terraform init \
+        run: |
+          terraform init \
           -backend-config="bucket=${{ vars.S3_BUCKET }}" \
           -backend-config="key=${{ inputs.dir }}/terraform.tfstate"
 

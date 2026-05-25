@@ -72,7 +72,7 @@ jobs:
 
       - name: Report Revision to InfraView
         if: inputs.revision-info && !inputs.destroy
-        uses: ky3ow/infraview/.github/actions/revision-info@996c6a1589496558c238ca7adc20d17bf6cacb2e
+        uses: ./.github/actions/vendored-revision-info
         with:
           base_url: ${{ env.INFRAVIEW_URL }}
           token: ${{ env.INFRAVIEW_WRITE_TOKEN }}

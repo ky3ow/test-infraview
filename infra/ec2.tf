@@ -8,8 +8,4 @@ resource "aws_instance" "infraview" {
   user_data = templatefile("${path.module}/provision.sh.tmpl", {
     secret_name = aws_secretsmanager_secret.infraview_store.name
   })
-
-  tags = {
-    Name = "infraview-demo"
-  }
 }

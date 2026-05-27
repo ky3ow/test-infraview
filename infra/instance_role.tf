@@ -4,9 +4,9 @@ resource "aws_iam_role" "infraview_instance" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Service = "ec2.amazonaws.com" }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -27,11 +27,11 @@ resource "aws_iam_role_policy" "infraview_secrets" {
         "secretsmanager:ListSecretVersionIds"
       ]
       Resource = aws_secretsmanager_secret.infraview_store.arn
-    }, {
+      }, {
       Effect   = "Allow"
       Action   = "s3:GetObject"
       Resource = "arn:aws:s3:::ky3ow-infraview-tfstate/artifacts/*"
-    }, {
+      }, {
       Effect = "Allow"
       Action = [
         "logs:CreateLogGroup",
@@ -40,6 +40,21 @@ resource "aws_iam_role_policy" "infraview_secrets" {
         "logs:DescribeLogStreams"
       ]
       Resource = "arn:aws:logs:*:*:*"
+      }, {
+      Effect = "Allow"
+      Action = [
+        "cloudwatch:PutMetricData",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:ListMetrics"
+      ]
+      Resource = "*"
+      }, {
+      Effect = "Allow"
+      Action = [
+        "ec2:DescribeTags"
+      ]
+      Resource = "*"
     }]
   })
 }

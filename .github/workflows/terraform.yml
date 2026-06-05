@@ -59,7 +59,7 @@ jobs:
           terraform show -json plan.out > plan.json
 
           SECRET=$(aws secretsmanager get-secret-value \
-            --secret-id infraview/secrets \
+            --secret-id infraview/secret_store \
             --query SecretString --output text)
 
           INFRAVIEW_URL=$(echo "$SECRET" | jq -r '.url')

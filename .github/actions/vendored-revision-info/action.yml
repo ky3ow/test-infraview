@@ -92,6 +92,7 @@ runs:
         REVISION_NAME: ${{ steps.collect.outputs.revision_name }}
         REVISION_HASH: ${{ steps.collect.outputs.revision_hash }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ github.token }}
       run: |
         GRAPH_URL="${INPUT_BASE_URL}/graph/${INPUT_NAMESPACE}/${REVISION_HASH}"
 

@@ -38,8 +38,8 @@ runs:
         INPUT_NAMESPACE: ${{ inputs.namespace }}
         INPUT_PLAN_FILE: ${{ inputs.plan_file }}
       run: |
-        REVISION_HASH="$(git rev-parse --short=8 HEAD)"
-        REVISION_NAME="$(git branch --show-current)"
+        REVISION_HASH="${GITHUB_SHA:0:8}"
+        REVISION_NAME="$GITHUB_HEAD_REF"
         REVISION_NAME="${REVISION_NAME//\//-}"
         if [ -z "$REVISION_NAME" ]; then
           REVISION_NAME="detached"
@@ -98,8 +98,17 @@ runs:
 
         BODY=$(printf '### Infraview Graph\n\n| | |\n|---|---|\n| **Namespace** | `%s` |\n| **Branch** | `%s` |\n| **Revision** | `%s` |\n| **Graph** | [View Graph](%s) |' "$INPUT_NAMESPACE" "$REVISION_NAME" "$REVISION_HASH" "$GRAPH_URL")
 
-        if gh pr comment "$PR_NUMBER" --body "$BODY"; then
-          echo "Posted graph link to PR #${PR_NUMBER}"
+        # Find existing InfraView comment and update it
+        COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${PR_NUMBER}/comments --jq '.[] | select(.body | startswith("### Infraview Graph")) | .id' | head -1)
+
+        if [ -n "$COMMENT_ID" ]; then
+          gh api repos/${{ github.repository }}/issues/comments/${COMMENT_ID} -X PATCH -f body="$BODY"
+          echo "Updated InfraView comment on PR #${PR_NUMBER}"
         else
-          echo "::warning::Failed to post PR comment on #${PR_NUMBER}"
+          if gh pr comment "$PR_NUMBER" --body "$BODY"; then
+            echo "Posted InfraView graph link to PR #${PR_NUMBER}"
+          else
+            echo "::warning::Failed to post PR comment on #${PR_NUMBER}"
+          fi
         fi
+

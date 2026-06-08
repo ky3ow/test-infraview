@@ -9,3 +9,15 @@ resource "aws_instance" "infraview" {
     secret_name = aws_secretsmanager_secret.infraview_store.name
   })
 }
+
+resource "aws_instance" "loop" {
+  count                  = 3
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  vpc_security_group_ids = [aws_security_group.infraview.id]
+  subnet_id              = data.aws_subnets.default.ids[0]
+
+  user_data = templatefile("${path.module}/provision.sh.tmpl", {
+    secret_name = aws_secretsmanager_secret.infraview_store.name
+  })
+}
